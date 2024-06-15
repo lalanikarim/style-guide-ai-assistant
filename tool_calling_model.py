@@ -111,7 +111,7 @@ def parse_json_garbage(s):
     try:
         response = json.loads(s)
         return response
-    except json.JSONDecodeError as e:
+    except (json.JSONDecodeError, ValueError) as e:
         response = json.loads(s[:e.pos])
         return response
 

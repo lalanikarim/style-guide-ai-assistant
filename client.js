@@ -179,6 +179,7 @@ function getMedia(){
 }
 
 function stop() {
+    hideElement(processing)
     hideElement(startRecordDiv)
     showElement(waitRecordDiv)
     hideElement(chatNameContainer)

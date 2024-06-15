@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from langchain_core.documents import Document
 from langchain_core.messages import BaseMessage, ToolMessage, HumanMessage, ChatMessage
 from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnableLambda
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings, ChatNVIDIA
 from langgraph.graph import MessageGraph, END
 from langgraph.graph.graph import CompiledGraph
@@ -39,12 +39,13 @@ _nvidia_embed = NVIDIAEmbeddings(model=_nvidia_embed_model)
 _sdb = SurrealDBStore(embedding_function=_nvidia_embed)
 
 
-def strip_content(content: str) -> str:
+def _strip_content(content: str) -> str:
     return " ".join([line.strip() for line in content.split("\n")])
 
 
-def format_documents_for_query(docs: List[Document]) -> Dict[str, str]:
-    return {doc.metadata["id"]: strip_content(doc.page_content) for doc in docs}
+def _format_documents_for_query(docs: List[Document]) -> str:
+    return "\n\n".join([f"document id: {doc.metadata["id"]}\n"
+                        f"outfit description: {_strip_content(doc.page_content)}" for doc in docs])
 
 
 class ListOfDocumentIds(BaseModel):
@@ -103,10 +104,46 @@ async def outfit_recommender(request: str, context: Optional[str]) -> List[str]:
 
     logger.info(f"Outfit recommender pre-processor response: {new_request}")
 
+    retrieval_prompt = PromptTemplate.from_template("""
+        Review the outfit descriptions below and find all that match the user's request.
+        Return all document ids for the matching outfits.
+        Document Ids must always begin with "documents:" prefix.
+        Only return document ids.
+
+
+        ** Outfit descriptions **
+        {documents}
+
+        ** User Request **
+        {request}
+
+        ** Matching Document IDs **
+    """)
+
     await _sdb.initialize()
-    results = await _sdb.asimilarity_search(query=new_request)
-    logger.info(f"Outfit recommender found {len(results)} matches")
-    return [result.metadata["image_url"] for result in results]
+    retriever = _sdb.as_retriever()
+
+    async def get_image_urls(doc_ids: ListOfDocumentIds) -> List[str]:
+        documents = [await _sdb.sdb.select(doc_id) for doc_id in doc_ids.document_ids]
+        return [doc["metadata"]["image_url"] for doc in documents]
+
+    retrieval_chain = (
+            {
+                "documents": retriever | _format_documents_for_query,
+                "request": RunnablePassthrough()
+            } | retrieval_prompt | _llm.with_structured_output(ListOfDocumentIds) |
+            RunnableLambda(get_image_urls)
+    )
+    # results = await _sdb.asimilarity_search(query=new_request)
+    results = []
+    try:
+        results = await retrieval_chain.ainvoke(new_request)
+        logger.info(f"Outfit recommender found {len(results)} matches")
+    except Exception as e:
+        logger.exception(e)
+        results = ["error: Error retrieving outfit"]
+    # return [result.metadata["image_url"] for result in results]
+    return results
 
 
 _tools = [DuckDuckGoSearchRun(max_results=5), outfit_recommender]
