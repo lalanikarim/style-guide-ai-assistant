@@ -144,8 +144,14 @@ async def offer(request):
             continue_to_synthesize, response = await transcribe_request(data)
             if continue_to_synthesize:
                 if isinstance(response, ToolMessage) and response.name == "outfit_recommender":
-                    images = json.loads(response.content)
-                    await send_images(images)
+                    if response.content[0] == "[":
+                        images = json.loads(response.content)
+                        await send_images(images)
+                    elif response.content[:5] == "Error":
+                        channel.send("AI: " + response.content)
+                        channel.send("playing: response")
+                        channel.send("playing: silence")
+                        await asyncio.sleep(0)
                 else:
                     state.log_info(response.content)
                     content = response.content.strip()
@@ -163,11 +169,10 @@ async def offer(request):
             state.log_info(transcription[0])
             await asyncio.sleep(0)
             try:
-                # response = chain.get_chain().invoke({"human_input": transcription[0]})
                 user_request = HumanMessage(transcription[0])
                 response = await graph.get_graph().ainvoke(state.get_context() + [user_request])
                 last_response = response[-1]
-                if last_response.content[0] != '[':
+                if last_response.content[0] != '[' and last_response.content[:5] != "Error":
                     state.add_to_context(user_request)
                     state.add_to_context(last_response)
                 continue_to_synthesize = True

@@ -87,7 +87,7 @@ function start() {
     state.dc = state.pc.createDataChannel("chat")
     state.dc.onopen = (ev) => {
         console.log("Data channel is open and ready to use");
-        state.dc.send("Hello server");
+        send_message_on_chat("Hello server");
     }
     state.dc.onmessage = (ev) => {
         console.log('Received message: ' + trim(ev.data));
@@ -201,14 +201,19 @@ function record(){
     hideElement(startRecordDiv)
     showElement(stopRecordDiv)
     //getMedia()
-    state.dc.send("start_recording")
+    send_message_on_chat("start_recording")
 }
 
 function stopRecord() {
-    state.dc.send("stop_recording")
+    send_message_on_chat("stop_recording")
     showElement(processing)
     hideElement(stopRecordDiv)
     showElement(waitRecordDiv)
+}
+
+function send_message_on_chat(message) {
+    console.log(`Sending: ${message}`)
+    state.dc.send(message)
 }
 
 function getMimeTypeFromData(data) {
@@ -250,8 +255,8 @@ function splitStringToMax(str, maxLength) {
 }
 function processPhotoUpload(fileName, buffer) {
     const data = new Uint8Array(buffer)
-    if(data.length > 140 * 1024){
-        logmessage(`AI: File uploads larger than 140kb are not allowed. You attempted to upload file of size ${Math.ceil(data.length / 1024)} kb.`)
+    if(data.length > 150 * 1024){
+        logmessage(`AI: File uploads larger than 150kb are not allowed. You attempted to upload file of size ${Math.ceil(data.length / 1024)} kb.`)
         fileInput.value = null
         return
     }
@@ -264,11 +269,11 @@ function processPhotoUpload(fileName, buffer) {
     showElement(waitRecordDiv)
     const maxMessageSize = state.pc.sctp.maxMessageSize
     logmessage(`Human: Uploading ${fileName}`)
-    state.dc.send("upload:START")
+    send_message_on_chat("upload:START")
     splitStringToMax(fileNameImageUrl, maxMessageSize - 7).forEach((chunk) => {
         state.dc.send(`upload:${chunk}`)
     })
-    state.dc.send("upload:DONE")
+    send_message_on_chat("upload:DONE")
     logmessage(`uploading: data:${mimeType};base64,${base64String}`)
     fileInput.value = null
 }
@@ -276,10 +281,10 @@ function uploadPhoto(){
     fileInput.click()
 }
 function getResponse(){
-    state.dc.send("get_response")
+    send_message_on_chat("get_response")
 }
 function getSilence(){
-    state.dc.send("get_silence")
+    send_message_on_chat("get_silence")
 }
 function handleSuccess(stream) {
     const tracks = stream.getAudioTracks()
@@ -304,11 +309,11 @@ function hideElement(element) {
 
 function changePreset(){
     let preset = document.querySelector("select#presets").value
-    state.dc.send("preset:" + preset)
+    send_message_on_chat("preset:" + preset)
 }
 function changeModel() {
     let model = document.querySelector("select#models").value
-    state.dc.send("model:" + model)
+    send_message_on_chat("model:" + model)
     chatNameContainer.textContent = model
 }
 

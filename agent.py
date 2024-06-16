@@ -1,3 +1,4 @@
+import asyncio
 import os
 from typing import List, Optional, Dict
 
@@ -57,7 +58,7 @@ class ListOfDocumentIds(BaseModel):
 
 
 @tool
-async def outfit_recommender(request: str, context: Optional[str]) -> List[str]:
+async def outfit_recommender(request: str, context: Optional[str]) -> [List[str] | str]:
     """
     Outfit retriever tool takes an outfit search query and returns a list of outfits from the library
     of outfits. The request must include specifics like colors or style or occasion or venue.
@@ -104,21 +105,22 @@ async def outfit_recommender(request: str, context: Optional[str]) -> List[str]:
 
     logger.info(f"Outfit recommender pre-processor response: {new_request}")
 
-    retrieval_prompt = PromptTemplate.from_template("""
-        Review the outfit descriptions below and find all that match the user's request.
-        Return all document ids for the matching outfits.
-        Document Ids must always begin with "documents:" prefix.
-        Only return document ids.
+    retrieval_prompt = PromptTemplate.from_template(
+        """Review the outfit descriptions below and find all that match the user's criteria.
+Return all document ids for the matching outfits.
+Document Ids must always begin with "documents:" prefix.
+Only return the list of document ids that match the user's criteria.
 
+Outfit descriptions
 
-        ** Outfit descriptions **
-        {documents}
+{documents}
 
-        ** User Request **
-        {request}
+User criteria
 
-        ** Matching Document IDs **
-    """)
+{criteria}
+
+Matching Document IDs
+""")
 
     await _sdb.initialize()
     retriever = _sdb.as_retriever()
@@ -130,19 +132,20 @@ async def outfit_recommender(request: str, context: Optional[str]) -> List[str]:
     retrieval_chain = (
             {
                 "documents": retriever | _format_documents_for_query,
-                "request": RunnablePassthrough()
-            } | retrieval_prompt | _llm.with_structured_output(ListOfDocumentIds) |
-            RunnableLambda(get_image_urls)
+                "criteria": RunnablePassthrough()
+            } | retrieval_prompt | _llm.with_structured_output(ListOfDocumentIds)
+            | RunnableLambda(func=get_image_urls)
     )
 
     try:
-        results = await retrieval_chain.ainvoke(new_request)
-        logger.info(f"Outfit recommender found {len(results)} matches")
+        async with asyncio.timeout(10):
+            image_urls: List[str] = await retrieval_chain.ainvoke(new_request)
+        logger.info(f"Outfit recommender found {len(image_urls)} matches")
+        return image_urls
     except Exception as e:
         logger.exception(e)
-        results = ["error: Error retrieving outfit"]
-    # return [result.metadata["image_url"] for result in results]
-    return results
+        logger.error("Error occurred while retrieving image urls")
+        return "Error retrieving outfit"
 
 
 _tools = [DuckDuckGoSearchRun(max_results=5), outfit_recommender]
@@ -241,6 +244,8 @@ def _summarize_node(messages: List[BaseMessage]) -> Optional[BaseMessage]:
     last_message = messages[-1]
     if not isinstance(last_message, ToolMessage) or (
             last_message.content[0] == '[' and last_message.content[-1] == ']'):
+        return None
+    if last_message.content[:5] == "Error":
         return None
     request = [message for message in messages if isinstance(message, HumanMessage)][-1]
     prompt = PromptTemplate.from_template("""Review the request and provide a short one line response in simple 
