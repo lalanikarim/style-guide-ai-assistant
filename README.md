@@ -77,3 +77,42 @@ descriptions stored within the vector database.
 the user's query and returns a list of document identifiers.
 6. The document identifiers are then passed back into the vector database to retrieve the outfit images which are then 
 handed over to the AI Agent which it later sends to the user.
+
+### Installation
+
+1. Ensure you have Python 3.12.
+   ```
+   python --version
+   Python 3.12.4
+   ```
+2. You will need the following API Keys:
+   1. Personal Key from your organization's profile on https://ngc.nvidia.com/ is needed to make API calls to the hosted
+      NIM endpoints.
+   2. Optionally, API Key from https://smith.langchain.com for LangSmith tracing.
+3. `SurealDB` installation instructions can be found here: https://surrealdb.com/install
+4. Download the source code and create a python virtual environment in the project's source folder.
+   ```
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
+5. Download python package dependencies for the project.
+   ```
+   pip install -r requirements
+   ```
+6. Create a `.env` file with the following entries.
+   ```
+   LANGCHAIN_API_KEY=<LangChain API Key for LangSmith> # Optional
+   LANGCHAIN_TRACING_V2=false # true to enable LangSmith tracing. API KEY is needed for this.
+   LANGCHAIN_PROJECT="<Project name for LangSmith tracing>"
+   NVIDIA_API_KEY=<NVIDIA API KEY to access NGC Catalog>
+   NVIDIA_LLM_MODEL=meta/llama3-8b-instruct # Can be another JSON capable LLM hosted on NIM
+   NVIDIA_VLLM_MODEL=microsoft/phi-3-vision-128k-instruct # Can be another suitable VLLM hosted on NIM
+   NVIDIA_EMBEDDINGS_MODEL=NV-Embed-QA # Can be another embedding model hosted on NIM
+   ```
+7. Start the server.
+   ```
+   python -m server
+   ======== Running on http://0.0.0.0:8080 ========
+   (Press CTRL+C to quit)
+   ```
+8. The application can now be accessed from your browser by visiting http://localhost:8080
