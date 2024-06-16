@@ -134,8 +134,7 @@ async def outfit_recommender(request: str, context: Optional[str]) -> List[str]:
             } | retrieval_prompt | _llm.with_structured_output(ListOfDocumentIds) |
             RunnableLambda(get_image_urls)
     )
-    # results = await _sdb.asimilarity_search(query=new_request)
-    results = []
+
     try:
         results = await retrieval_chain.ainvoke(new_request)
         logger.info(f"Outfit recommender found {len(results)} matches")
