@@ -23,6 +23,8 @@ Furthermore, any information it pulls from the Internet, it can use as additiona
 Is it a sunny day outside? Maybe go with 
 bright-colored outfits. Is it cloudy? How about some darker shades?
 
+[![Watch a demo on YouTube! here](https://img.youtube.com/vi/@klcoder/0.jpg)](https://www.youtube.com/watch?v=aWYGDufOR_k)
+
 ![Overview](./flows/Style-Guide-AI-Assistant.png)
 
 Technologies
@@ -125,6 +127,3 @@ handed over to the AI Agent which it later sends to the user.
    ```
 8. The application can now be accessed from your browser by visiting http://localhost:8080
 
-### Demo
-
-[![Youtube](https://img.youtube.com/vi/@klcoder/0.jpg)](https://www.youtube.com/watch?v=aWYGDufOR_k)
