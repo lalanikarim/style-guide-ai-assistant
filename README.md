@@ -69,7 +69,7 @@ the user.
 7. Finally, if the generated response is text, then a voice response is synthesized and played back to the user. 
 8. If the response is a list of images, then they are displayed within the chat interface.
 
-![AI Agent Workflow](./flows/Photo-Upload-Workflow.png)
+![AI Agent Workflow](./flows/AI-Agent-Workflow.png)
 
 ### Outfit Recommendation Workflow
 
