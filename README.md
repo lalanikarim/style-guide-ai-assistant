@@ -23,6 +23,8 @@ Furthermore, any information it pulls from the Internet, it can use as additiona
 Is it a sunny day outside? Maybe go with 
 bright-colored outfits. Is it cloudy? How about some darker shades?
 
+![Overview](./flows/Style-Guide-AI-Assistant.png)
+
 Technologies
 ------------
 
@@ -49,6 +51,8 @@ Workflows
 3. The extracted features, along with their `embedding vectors` and the original image are then stored within the 
 `SurrealDB` database.
 
+![Photo Upload Workflow](./flows/Photo-Upload-Workflow.png)
+
 ### AI Agent Workflow
 
 1. User's voice is first transcribed using `Whisper` and the transcription is passed to the AI Agent.
@@ -62,6 +66,8 @@ Workflows
 the user.
 7. Finally, if the generated response is text, then a voice response is synthesized and played back to the user. 
 8. If the response is a list of images, then they are displayed within the chat interface.
+
+![AI Agent Workflow](./flows/Photo-Upload-Workflow.png)
 
 ### Outfit Recommendation Workflow
 
@@ -77,6 +83,8 @@ descriptions stored within the vector database.
 the user's query and returns a list of document identifiers.
 6. The document identifiers are then passed back into the vector database to retrieve the outfit images which are then 
 handed over to the AI Agent which it later sends to the user.
+
+![Outfit Recommendation Workflow](./flows/Outfit-Recommendation-Workflow.png)
 
 ### Installation
 
